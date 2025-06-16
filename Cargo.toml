@@ -1,0 +1,23 @@
+[package]
+name = "raspi4_rust_bootloader"
+version = "0.1.0"
+edition = "2024"
+
+[build]
+target = "aarch64-unknown-none"
+
+[target.aarch64-unknown-none]
+runner = "qemu-system-aarch64" # or leave blank if flashing
+
+[unstable]
+build-std = ["core", "compiler_builtins"]
+
+[dependencies]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[build-dependencies]
