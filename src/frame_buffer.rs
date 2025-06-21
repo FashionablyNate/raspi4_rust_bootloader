@@ -1,4 +1,3 @@
-
 use core::ptr::write_volatile;
 
 use crate::mailbox::Mailbox;
@@ -98,7 +97,7 @@ static mut FB_MAILBOX: FrameBufferMailbox = FrameBufferMailbox {
     pitch: 0,
 
     // End tag
-    end_tag: 0
+    end_tag: 0,
 };
 
 pub struct FrameBuffer {
@@ -111,13 +110,21 @@ pub struct FrameBuffer {
 impl FrameBuffer {
     pub fn new(mailbox: &mut Mailbox) -> Option<Self> {
         unsafe {
-            if mailbox.call(CHANNEL_FRAMEBUFFER, &raw mut FB_MAILBOX as *mut _ as *mut u32) {
+            if mailbox.call(
+                CHANNEL_FRAMEBUFFER,
+                &raw mut FB_MAILBOX as *mut _ as *mut u32,
+            ) {
                 let ptr = (FB_MAILBOX.fb_ptr & 0x3FFFFFFF) as *mut u32;
                 let pitch = FB_MAILBOX.pitch as usize;
                 let width = FB_MAILBOX.virtual_width as usize;
                 let height = FB_MAILBOX.virtual_height as usize;
 
-                return Some(FrameBuffer { ptr, width, height, pitch })
+                return Some(FrameBuffer {
+                    ptr,
+                    width,
+                    height,
+                    pitch,
+                });
             }
         }
 
@@ -127,9 +134,83 @@ impl FrameBuffer {
     pub fn clear(&self, color: u32) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let offset = (y * self.pitch + x * 4) as isize;
+                self.draw_pixel(x, y, color);
+            }
+        }
+    }
+
+    pub fn draw_string<const HEIGHT: usize>(
+        &self,
+        x: usize,
+        y: usize,
+        string: &str,
+        color: u32,
+        scale: usize,
+        font: &[[u8; HEIGHT]; 128],
+    ) {
+        let mut x_offset = 0;
+        let mut y_offset = 0;
+        let glyph_width = 8 * scale;
+        let glyph_height = HEIGHT * scale;
+        for ch in string.bytes() {
+            match ch {
+                b'\n' => {
+                    x_offset = 0;
+                    y_offset += 8 * scale;
+                }
+                b' '..=b'~' => {
+                    if x + x_offset + glyph_width > self.width
+                        || y + y_offset + glyph_height > self.height
+                    {
+                        break;
+                    }
+                    self.draw_glyph(x + x_offset, y + y_offset, ch, color, scale, font);
+                    x_offset += 8 * scale;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    pub fn draw_glyph<const HEIGHT: usize>(
+        &self,
+        x: usize,
+        y: usize,
+        ch: u8,
+        color: u32,
+        scale: usize,
+        font: &[[u8; HEIGHT]; 128],
+    ) {
+        if ch as usize >= font.len() {
+            return;
+        }
+
+        let glyph = &font[ch as usize];
+
+        for (row_idx, row_bits) in glyph.iter().enumerate() {
+            for col in 0..8 {
+                if (row_bits >> col) & 1 != 0 {
+                    let base_x = x + col * scale;
+                    let base_y = y + row_idx * scale;
+
+                    for dy in 0..scale {
+                        for dx in 0..scale {
+                            self.draw_pixel(base_x + dx, base_y + dy, color);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn draw_pixel(&self, x: usize, y: usize, color: u32) {
+        if x < self.width && y < self.height {
+            let offset = y
+                .checked_mul(self.pitch / 4)
+                .and_then(|row| row.checked_add(x));
+            if let Some(offset) = offset {
                 unsafe {
-                    write_volatile(self.ptr.offset(offset / 4), color);
+                    write_volatile(self.ptr.add(offset), color);
                 }
             }
         }

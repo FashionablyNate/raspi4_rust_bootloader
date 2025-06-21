@@ -1,30 +1,49 @@
-SECTIONS
-{
-    . = 0x80000;
 
-    .text : {
-        KEEP(*(.text.boot)) 
-        *(.text .text.* .gnu.linkonce.t*)
-    }
+ENTRY(_start)
 
-    .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
-
-    PROVIDE(_data = .);
-
-    .data : { *(.data .data.* .gnu.linkonce.d*) }
-
-    .bss (NOLOAD) : {
-        . = ALIGN(16);
-        __bss_start = .;
-        *(.bss .bss.*)
-        *(COMMON)
-        __bss_end = .;
-    }
-
-    _end = .;
-
-    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
+/* Program Headers */
+PHDRS {
+    /* stack segment readable and writable b110 */
+    segment_boot_core_stack PT_LOAD FLAGS(6);
+    /* code segment readable and executable b101 */
+    segment_code PT_LOAD FLAGS(5);
+    /* data segment readable and writable b110 */
+    segment_data PT_LOAD FLAGS(6);
 }
 
-__bss_size = (__bss_end - __bss_start) >> 3;
+SECTIONS {
+    . = 0;
 
+    /* Stack */
+    .boot_core_stack (NOLOAD) : {
+        . += 0x80000;
+        __boot_core_stack_end = .;
+    } :segment_boot_core_stack
+
+    /* Code */
+    .text : {
+        KEEP(*(.text._start))
+        *(.text.__start_argments)
+        *(.text.__start_rust)
+        *(text*)
+    } :segment_code
+
+    /* Data */
+    .data : {
+        *(.data*)
+    } :segment_data
+
+    .bss (NOLOAD) : ALIGN(16) {
+        __bss_start = .;
+        *(.bss*);
+        . = ALIGN(16);
+        __bss_end = .;
+    } :segment_data
+
+    /* Misc */
+    .got : {
+        *(.got*)
+    }
+
+    /DISCARD/ : { *(.comment*) }
+}
