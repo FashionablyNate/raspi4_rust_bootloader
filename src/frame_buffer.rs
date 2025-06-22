@@ -3,6 +3,11 @@ use core::ptr::write_volatile;
 use crate::mailbox::Mailbox;
 
 const CHANNEL_FRAMEBUFFER: u8 = 8;
+const WIDTH: usize = 1920;
+const HEIGHT: usize = 1080;
+const BYTES_PER_PIXEL: usize = 4;
+const BUFFER_SIZE: usize = WIDTH * HEIGHT * BYTES_PER_PIXEL;
+const MAILBOX_BASE: usize = 0xFE00B880;
 
 #[repr(C, align(16))]
 struct FrameBufferMailbox {
@@ -61,15 +66,15 @@ static mut FB_MAILBOX: FrameBufferMailbox = FrameBufferMailbox {
     tag_set_physical_size: 0x00048003,
     tag_physical_size_bufsize: 8,
     tag_physical_size_len: 8,
-    physical_width: 1920,
-    physical_height: 1080,
+    physical_width: WIDTH as u32,
+    physical_height: HEIGHT as u32,
 
     // Set virtual size
     tag_set_virtual_size: 0x00048004,
     tag_virtual_size_bufsize: 8,
     tag_virtual_size_len: 8,
-    virtual_width: 1920,
-    virtual_height: 1080,
+    virtual_width: WIDTH as u32,
+    virtual_height: HEIGHT as u32,
 
     // Set depth
     tag_set_depth: 0x00048005,
@@ -105,27 +110,31 @@ pub struct FrameBuffer {
     pub width: usize,
     pub height: usize,
     pub pitch: usize,
+    mailbox: Mailbox,
 }
 
 impl FrameBuffer {
-    pub fn new(mailbox: &mut Mailbox) -> Option<Self> {
-        unsafe {
-            if mailbox.call(
-                CHANNEL_FRAMEBUFFER,
-                &raw mut FB_MAILBOX as *mut _ as *mut u32,
-            ) {
+    pub fn new() -> Option<Self> {
+        let mailbox = Mailbox::new(MAILBOX_BASE);
+        if mailbox.call(
+            CHANNEL_FRAMEBUFFER,
+            &raw mut FB_MAILBOX as *mut _ as *mut u32,
+        ) {
+            let (ptr, pitch, width, height) = unsafe {
                 let ptr = (FB_MAILBOX.fb_ptr & 0x3FFFFFFF) as *mut u32;
                 let pitch = FB_MAILBOX.pitch as usize;
                 let width = FB_MAILBOX.virtual_width as usize;
                 let height = FB_MAILBOX.virtual_height as usize;
+                (ptr, pitch, width, height)
+            };
 
-                return Some(FrameBuffer {
-                    ptr,
-                    width,
-                    height,
-                    pitch,
-                });
-            }
+            return Some(FrameBuffer {
+                ptr,
+                width,
+                height,
+                pitch,
+                mailbox,
+            });
         }
 
         None

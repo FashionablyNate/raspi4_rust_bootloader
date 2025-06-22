@@ -22,13 +22,9 @@ global_asm!(
     CONST_CORE_ID_MASK = const 0b11
 );
 
-// MMIO addresses
-const MAILBOX_BASE: usize = 0xFE00B880;
-
 #[unsafe(no_mangle)]
 pub extern "C" fn _start_rust() -> ! {
-    let mut mailbox = Mailbox::new(MAILBOX_BASE);
-    let mut fb = FrameBuffer::new(&mut mailbox).expect("Failed to create frame buffer");
+    let mut fb = FrameBuffer::new().expect("Failed to create frame buffer");
     fb.clear(0x0000FFFF);
     let mut tb = TextBuffer::<13, 26>::new(&mut fb, (100, 1820), (100, 980), 8)
         .expect("Failed to create text buffer");
@@ -45,9 +41,7 @@ pub extern "C" fn _start_rust() -> ! {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    let mut mailbox = Mailbox::new(MAILBOX_BASE);
-
-    if let Some(mut fb) = FrameBuffer::new(&mut mailbox) {
+    if let Some(mut fb) = FrameBuffer::new() {
         fb.clear(0x00FF0000);
         if let Ok(mut tb) = TextBuffer::<13, 26>::new(&mut fb, (100, 1820), (100, 980), 8) {
             let _ = write!(tb, "PANIC:");
