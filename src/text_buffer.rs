@@ -1,5 +1,6 @@
 use crate::{font8x8_basic::FONT8X8_BASIC, frame_buffer::FrameBuffer};
 
+#[derive(Debug)]
 pub enum TextBufferError {
     TextBufferInitFailed,
 }
@@ -12,7 +13,7 @@ pub struct TextBuffer<'a, const ROWS: usize, const COLS: usize> {
     offset_y: usize,
     font_size: usize,
     glyph_size: usize,
-    buffer: [[char; COLS]; 1000],
+    buffer: [[char; COLS]; ROWS],
     dirty_line: bool,
 }
 
@@ -35,7 +36,7 @@ impl<'a, const ROWS: usize, const COLS: usize> TextBuffer<'a, ROWS, COLS> {
             offset_y: y_bounds.0,
             font_size,
             glyph_size,
-            buffer: [[' '; COLS]; 1000],
+            buffer: [[' '; COLS]; ROWS],
             dirty_line: false,
         })
     }

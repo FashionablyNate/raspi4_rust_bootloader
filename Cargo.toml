@@ -3,11 +3,13 @@ name = "raspi4_rust_bootloader"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "raspi4_rust_bootloader"
+path = "src/main.rs"
+test = false
+
 [build]
 target = "aarch64-unknown-none"
-
-[target.aarch64-unknown-none]
-runner = "qemu-system-aarch64" # or leave blank if flashing
 
 [unstable]
 build-std = ["core", "compiler_builtins"]
