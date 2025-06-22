@@ -139,35 +139,10 @@ impl FrameBuffer {
         }
     }
 
-    pub fn draw_string<const HEIGHT: usize>(
-        &self,
-        x: usize,
-        y: usize,
-        string: &str,
-        color: u32,
-        scale: usize,
-        font: &[[u8; HEIGHT]; 128],
-    ) {
-        let mut x_offset = 0;
-        let mut y_offset = 0;
-        let glyph_width = 8 * scale;
-        let glyph_height = HEIGHT * scale;
-        for ch in string.bytes() {
-            match ch {
-                b'\n' => {
-                    x_offset = 0;
-                    y_offset += 8 * scale;
-                }
-                b' '..=b'~' => {
-                    if x + x_offset + glyph_width > self.width
-                        || y + y_offset + glyph_height > self.height
-                    {
-                        break;
-                    }
-                    self.draw_glyph(x + x_offset, y + y_offset, ch, color, scale, font);
-                    x_offset += 8 * scale;
-                }
-                _ => {}
+    pub fn clear_area(&self, x_area: (usize, usize), y_area: (usize, usize), color: u32) {
+        for y in y_area.0..y_area.1 {
+            for x in x_area.0..x_area.1 {
+                self.draw_pixel(x, y, color);
             }
         }
     }

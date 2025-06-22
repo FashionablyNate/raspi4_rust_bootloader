@@ -15,6 +15,9 @@ BUILD_ARGS = --release -Z build-std=core,compiler_builtins --target $(TARGET)
 SDCARD_DIR = /Volumes/bootfs
 SDCARD_KERNEL = $(SDCARD_DIR)/kernel8.img
 
+# Rust source files
+RUST_SRC := $(shell find src -type f -name '*.rs')
+
 .PHONY: all clean run copy
 
 all: $(OUTPUT) copy
@@ -22,7 +25,7 @@ all: $(OUTPUT) copy
 $(OUTPUT): $(BUILD_DIR)/$(BINARY_NAME)
 	$(OBJCOPY) -O binary $< $@
 
-$(BUILD_DIR)/$(BINARY_NAME):
+$(BUILD_DIR)/$(BINARY_NAME): $(RUST_SRC)
 	$(CARGO) build $(BUILD_ARGS)
 
 copy: $(OUTPUT)
@@ -40,6 +43,7 @@ copy: $(OUTPUT)
 		cp $(OUTPUT) $(SDCARD_KERNEL); \
 		echo "Copied $(OUTPUT) to $(SDCARD_KERNEL)"; \
 	fi
+	diskutil eject $(SDCARD_DIR)
 
 run: all
 	@echo "Bootloader built at $(OUTPUT)"
