@@ -27,21 +27,39 @@ impl Timer {
 
     /// Reads the system counter frequency in Hz (ticks per second)
     fn read_cntfrq_el0() -> u64 {
-        let value: u64;
-        // SAFETY: Reading from cntfrq_el0 is side-effect free and always safe in EL0
-        unsafe {
-            asm!("mrs {}, cntfrq_el0", out(reg) value);
+        #[cfg(target_arch = "aarch64")]
+        {
+            let value: u64;
+            // SAFETY: Reading from cntfrq_el0 is side-effect free and always safe in EL0
+            unsafe {
+                asm!("mrs {}, cntfrq_el0", out(reg) value);
+            }
+            value
         }
-        value
+
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // Provide dummy value for tests or non-ARM platforms
+            54_000_000
+        }
     }
 
     /// Reads the current physical counter value (monotonic timer ticks)
     fn read_cntpct_el0() -> u64 {
-        let value: u64;
-        // SAFETY: Reading from cntpct_el0 is side-effect free and always safe in EL0
-        unsafe {
-            asm!("mrs {}, cntpct_el0", out(reg) value);
+        #[cfg(target_arch = "aarch64")]
+        {
+            let value: u64;
+            // SAFETY: Reading from cntpct_el0 is side-effect free and always safe in EL0
+            unsafe {
+                asm!("mrs {}, cntpct_el0", out(reg) value);
+            }
+            value
         }
-        value
+
+        #[cfg(not(target_arch = "aarch64"))]
+        {
+            // Provide dummy value for tests or non-ARM platforms
+            0
+        }
     }
 }
