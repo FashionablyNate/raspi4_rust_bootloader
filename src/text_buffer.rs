@@ -1,7 +1,7 @@
-use crate::{font8x8_basic::FONT8X8_BASIC, frame_buffer::FrameBuffer};
+use crate::{font8x8_basic::FONT8X8_BASIC, frame_buffer::FrameBuffer, mailbox::MailboxInterface};
 
-pub struct TextBuffer<'a, const ROWS: usize, const COLS: usize> {
-    fb: &'a mut FrameBuffer,
+pub struct TextBuffer<'a, const ROWS: usize, const COLS: usize, M: MailboxInterface> {
+    fb: &'a mut FrameBuffer<'a, M>,
     cursor_x: usize,
     cursor_y: usize,
     offset_x: usize,
@@ -14,9 +14,9 @@ pub struct TextBuffer<'a, const ROWS: usize, const COLS: usize> {
     background_color: u32,
 }
 
-impl<'a, const ROWS: usize, const COLS: usize> TextBuffer<'a, ROWS, COLS> {
+impl<'a, const ROWS: usize, const COLS: usize, M: MailboxInterface> TextBuffer<'a, ROWS, COLS, M> {
     pub fn new(
-        fb: &'a mut FrameBuffer,
+        fb: &'a mut FrameBuffer<'a, M>,
         offset_x: usize,
         offset_y: usize,
         font_size: usize,
@@ -76,7 +76,9 @@ impl<'a, const ROWS: usize, const COLS: usize> TextBuffer<'a, ROWS, COLS> {
     }
 }
 
-impl<'a, const ROWS: usize, const COLS: usize> core::fmt::Write for TextBuffer<'a, ROWS, COLS> {
+impl<'a, const ROWS: usize, const COLS: usize, M: MailboxInterface> core::fmt::Write
+    for TextBuffer<'a, ROWS, COLS, M>
+{
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         for ch in s.chars() {
             if self.dirty_line {

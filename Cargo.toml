@@ -8,16 +8,12 @@ name = "raspi4_rust_bootloader"
 path = "src/main.rs"
 test = false
 
-[build]
-target = "aarch64-unknown-none"
-
 [unstable]
 build-std = ["core", "compiler_builtins"]
 
 [profile.dev]
 panic = "abort"
+test-threads = 1
 
 [profile.release]
 panic = "abort"
-
-[build-dependencies]

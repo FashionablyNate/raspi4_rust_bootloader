@@ -1,4 +1,3 @@
-
 use core::ptr::{read_volatile, write_volatile};
 
 const MAILBOX_READ_OFFSET: usize = 0x00;
@@ -9,6 +8,10 @@ const MAILBOX_EMPTY: u32 = 1 << 30;
 
 pub struct Mailbox {
     base_addr: usize,
+}
+
+pub trait MailboxInterface {
+    fn call(&self, channel: u8, buffer: *mut u32) -> bool;
 }
 
 impl Mailbox {
@@ -22,16 +25,31 @@ impl Mailbox {
         let msg = (buffer as usize & !0xF) | (channel as usize & 0xF);
 
         unsafe {
-            while read_volatile((self.base_addr + MAILBOX_STATUS_OFFSET) as *const u32) & MAILBOX_FULL != 0 {}
-            write_volatile((self.base_addr + MAILBOX_WRITE_OFFSET) as *mut u32, msg as u32);
+            while read_volatile((self.base_addr + MAILBOX_STATUS_OFFSET) as *const u32)
+                & MAILBOX_FULL
+                != 0
+            {}
+            write_volatile(
+                (self.base_addr + MAILBOX_WRITE_OFFSET) as *mut u32,
+                msg as u32,
+            );
 
             loop {
-                while read_volatile((self.base_addr + MAILBOX_STATUS_OFFSET) as *const u32) & MAILBOX_EMPTY != 0 {}
+                while read_volatile((self.base_addr + MAILBOX_STATUS_OFFSET) as *const u32)
+                    & MAILBOX_EMPTY
+                    != 0
+                {}
                 let resp = read_volatile((self.base_addr + MAILBOX_READ_OFFSET) as *const u32);
                 if resp as usize == msg {
                     return true;
                 }
             }
         }
+    }
+}
+
+impl MailboxInterface for Mailbox {
+    fn call(&self, channel: u8, buffer: *mut u32) -> bool {
+        self.call(channel, buffer)
     }
 }
