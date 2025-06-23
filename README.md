@@ -7,11 +7,17 @@ A bare-metal operating system for the Raspberry Pi 4 written in [Rust](https://w
 
 ## 📁 Project Structure
 
+```
 src/
-├── frame_buffer.rs # Framebuffer init, drawing, glyph rendering
-├── mailbox.rs # Mailbox interface (mocked for tests)
-├── timer.rs # ARM timer access (uses inline asm!)
-├── main.rs # Entry point (or your boot/startup logic)
+├── boot.s # Assembly startup code (entry point before Rust)
+├── font8x8_basic.rs # 8x8 bitmap font used for text rendering
+├── frame_buffer.rs # Framebuffer mailbox init + pixel/drawing logic
+├── lib.rs # #![no_std] and common declarations
+├── mailbox.rs # Mailbox interface with VC property tags
+├── main.rs # Kernel main() logic
+├── text_buffer.rs # Line-wrapped text rendering buffer using framebuffer
+└── timer.rs # Access to the ARM generic timer
+```
 
 ---
 
